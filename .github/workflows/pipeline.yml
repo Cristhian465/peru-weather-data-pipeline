@@ -1,0 +1,52 @@
+name: Weather pipeline and public dashboard
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 11 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: weather-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ingest public weather data
+        run: python pipeline/ingest.py
+      - name: Transform and validate
+        run: dbt build --profiles-dir .
+      - name: Export tested dashboard
+        run: python pipeline/export.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weather-data-and-quality-evidence
+          path: |
+            data/
+            target/run_results.json
+            target/manifest.json
+          retention-days: 7
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy public dashboard
+        id: deployment
+        uses: actions/deploy-pages@v4

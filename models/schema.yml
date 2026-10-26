@@ -1,0 +1,18 @@
+version: 2
+models:
+  - name: stg_weather
+    columns:
+      - name: city
+        data_tests: [not_null]
+      - name: weather_date
+        data_tests: [not_null]
+      - name: max_temp_c
+        data_tests: [not_null]
+      - name: min_temp_c
+        data_tests: [not_null]
+      - name: precipitation_mm
+        data_tests: [not_null]
+  - name: city_summary
+    columns:
+      - name: city
+        data_tests: [unique, not_null]
